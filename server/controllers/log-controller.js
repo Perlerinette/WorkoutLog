@@ -36,7 +36,27 @@ router.post('/', validateSession, (req,res) => {
  ****************/
 router.get('/', (req,res) => {
     Log.findAll()
-    .then(logs => res.status(200).json(logs))
+
+    .then(logs => {
+        // check how many users have written logs
+        let countUser = 0;
+        let owner = 0;
+        for(let log of logs) {
+            if(log.owner_id != owner) {
+                ++countUser;
+                owner = log.owner_id;
+                console.log("owner --> ", log.owner_id);
+            }
+        }
+        console.log("countUser --> ", countUser);
+
+        // display all info 
+        res.status(200).json({
+            message: `${countUser} different users have created ${logs.length} logs so far`,
+            logs            
+        });
+    })
+
     .catch(err => res.status(500).json({error: err}))
 
 });
@@ -47,12 +67,26 @@ router.get('/', (req,res) => {
  ****************/
 router.get('/:id', (req,res) => {
     let log_id = req.params.id;
+    
 
     Log.findAll({
         where: { id: log_id}
     })
 
-    .then(log => res.status(200).json(log))
+    .then(log => { 
+        
+        if(log.length === 0) {
+            res.status(404).json({ message: `Log #${log_id} has NOT been created yet.`})
+        } else {
+            let person = log[0].owner_id;
+
+            res.status(200).json({
+                message: `User ${person} created Log #${log_id}.`,
+                log
+            });            
+        }
+    })
+
     .catch(err => res.status(500).json({error: err}))
 
 });
@@ -61,18 +95,22 @@ router.get('/:id', (req,res) => {
  * LOG - UPDATE
  ****************/
 router.put('/:id', validateSession, (req,res) => {
+
+    let log_id = req.params.id;
+
     const updateLogEntry = {
         description: req.body.description,
         definition: req.body.definition,
         result: req.body.result
     };
 
-    const query = { where: { id: req.params.id, owner_id: req.user.id} };
+    const query = {where: { id: log_id, owner_id: req.user.id} };  // returning:true --> returns the updated log. If does not want, just remove this item
 
     Log.update(updateLogEntry, query)
 
-    .then((logs) => {res.status(200).json({message: logs > 0? "Log Updated." : "Log NOT updated."});
-    console.log(res.json());})
+    .then((log) => res.status(200).json({ message: log > 0 ?  `Log #${log_id} Updated` : `Log #${log_id} NOT Updated - either it does not exist or the user is not the owner of this log.`,
+    }))
+
     .catch((err) => res.status(500).json({error: err}));
 
 });
@@ -84,12 +122,25 @@ router.put('/:id', validateSession, (req,res) => {
  *****************/
 
 router.delete("/:id", validateSession, function(req,res){
-    const query = { where: { id: req.params.id, owner: req.user.id} };
+    let log_id = req.params.id;
+
+    const query = { where: { id: log_id, owner_id: req.user.id} };
 
     Log.destroy(query)
+    
+    .then((response) => res.status(200).json({ message: response > 0 ?  `Log #${log_id} Removed` : `Log #${log_id} NOT removed - either it does not exist or the user is not the owner of this log.`}))
 
-    .then((response) => res.status(200).json({ message: response > 0 ?  " Log Removed": "No Log removed"}))
     .catch((err) => res.status(500).json({error: err}));
 });
+
+
+
+
+
+
+
+
+
+
 
 module.exports = router;

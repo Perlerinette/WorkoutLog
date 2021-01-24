@@ -13,7 +13,7 @@ http://localhost:3000/user/login - POST
 */
 
 /*****************
- * USER REGISTER
+ * USER - REGISTER
  ****************/
 router.post('/register', function(req,res){
     User.create({
@@ -36,7 +36,7 @@ router.post('/register', function(req,res){
 
 
 /*****************
- * USER LOGIN
+ * USER - LOGIN
  ****************/
 router.post('/login', function(req,res){
     User.findOne({
@@ -69,6 +69,30 @@ router.post('/login', function(req,res){
     .catch(err => res.status(500).json({error :err}))
 
 });
+
+
+/*****************
+ * USER - Get NAME from ID
+ ****************/
+router.get('/:id', function(req,res){
+    let userId = req.params.id;
+
+    User.findOne({
+        where: {id: userId}
+    })
+
+    .then(user => {
+        if(user)
+        {    let nameOfUser = user.username;
+            res.status(200).json({message: `id #${userId} corresponds to '${nameOfUser}'.` })
+        } else {
+            res.status(500).json({error: 'User does not exist.'})
+        }
+    })
+
+    .catch(err => res.status(500).json({error :err}))
+})
+
 
 
 
