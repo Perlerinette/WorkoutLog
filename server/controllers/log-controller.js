@@ -34,27 +34,13 @@ router.post('/', validateSession, (req,res) => {
 /*****************
  * LOG - GET ALL
  ****************/
-router.get('/', (req,res) => {
-    Log.findAll()
+router.get('/', validateSession, (req,res) => {
+    const query = {where: {owner_id: req.user.id}}
+    Log.findAll( query )
 
-    .then(logs => {
-        // check how many users have written logs
-        let countUser = 0;
-        let owner = 0;
-        for(let log of logs) {
-            if(log.owner_id != owner) {
-                ++countUser;
-                owner = log.owner_id;
-                console.log("owner --> ", log.owner_id);
-            }
-        }
-        console.log("countUser --> ", countUser);
-
+    .then(logs => { 
         // display all info 
-        res.status(200).json({
-            message: `${countUser} different users have created ${logs.length} logs so far`,
-            logs            
-        });
+        res.status(200).json(logs);
     })
 
     .catch(err => res.status(500).json({error: err}))
@@ -73,6 +59,7 @@ router.get('/:id', (req,res) => {
         where: { id: log_id}
     })
 
+    // .then(log => res.status(200).json(log))
     .then(log => { 
         
         if(log.length === 0) {
@@ -81,8 +68,8 @@ router.get('/:id', (req,res) => {
             let person = log[0].owner_id;
 
             res.status(200).json({
-                message: `User ${person} created Log #${log_id}.`,
-                log
+                log,
+                message: `User ${person} created Log #${log_id}.`
             });            
         }
     })
@@ -132,10 +119,6 @@ router.delete("/:id", validateSession, function(req,res){
 
     .catch((err) => res.status(500).json({error: err}));
 });
-
-
-
-
 
 
 
